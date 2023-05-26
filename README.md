@@ -1,2 +1,1 @@
-# in game overlay
- Fullscreen application overlay for Spotify
+# Fullscreen application overlay for Spotify
