@@ -28,8 +28,8 @@ public class App{
     private static boolean guiInitialized = false;
 	
 	public static final SpotifyApi  spotifyApi = new SpotifyApi.Builder()
-			  .setClientId("ce186274da7a40a098ccec56a2c00404")
-			  .setClientSecret("674671e984ea4822b49e68f383a97c82")
+			  .setClientId("<clientid>")
+			  .setClientSecret("<clientsecret>")
 			  .setRedirectUri(
 					  SpotifyHttpManager.makeUri("http://localhost:8888/callback"))
 			  .build();
