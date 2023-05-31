@@ -26,5 +26,16 @@
 	  <artifactId>spotify-web-api-java</artifactId>
 	  <version>8.0.0</version>
 	</dependency>
+    <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-server</artifactId>
+        <version>11.0.6</version>
+    </dependency>
+    <dependency>
+        <groupId>jakarta.servlet</groupId>
+        <artifactId>jakarta.servlet-api</artifactId>
+        <version>5.0.0</version>
+        <scope>provided</scope>
+    </dependency>
   </dependencies>
 </project>

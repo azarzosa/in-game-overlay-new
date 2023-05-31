@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+    xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee
+    http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd"
+    id="WebApp_ID" version="4.0">
+
+    <display-name>Spotify In-Game Overlay</display-name>
+
+    <!-- Configure the context listener -->
+    <listener>
+        <listener-class>az.araezarzosa.spotifyoverlay.spotify_in_game_overlay.SpotifyOverlayContextListener</listener-class>
+    </listener>
+
+    <!-- Map the servlet -->
+    <servlet>
+        <servlet-name>SpotifyAuthorizationServer</servlet-name>
+        <servlet-class>your.package.SpotifyAuthorizationServer</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>SpotifyAuthorizationServer</servlet-name>
+        <url-pattern>/callback</url-pattern> <!-- Replace with your desired callback URL -->
+    </servlet-mapping>
+
+</web-app>
