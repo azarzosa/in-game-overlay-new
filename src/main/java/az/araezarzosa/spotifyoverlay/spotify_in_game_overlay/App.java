@@ -59,9 +59,9 @@ public class App{
     private static final String[] positionStrings = { "Top Left", "Top Right", "Top Center", "Bottom Left", "Bottom Right", "Bottom Center"};
     private static final String[] sizeStrings = { "Small", "Medium", "Large" };
 	
-	private static final SpotifyApi  spotifyApi = new SpotifyApi.Builder()
-			  .setClientId("<client_id>")
-			  .setClientSecret("<client_secret>")
+	private static final SpotifyApi spotifyApi = new SpotifyApi.Builder()
+			  .setClientId(<client_id>)
+			  .setClientSecret(<client_secret>)
 			  .setRedirectUri(
 					  SpotifyHttpManager.makeUri("http://localhost:8888/callback"))
 			  .build();

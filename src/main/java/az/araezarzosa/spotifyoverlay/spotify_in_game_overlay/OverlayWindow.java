@@ -8,6 +8,9 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -17,6 +20,8 @@ import javax.swing.event.ChangeListener;
 import javax.swing.event.MouseInputAdapter;
 import javax.swing.plaf.basic.BasicSliderUI;
 
+import se.michaelthelin.spotify.model_objects.miscellaneous.CurrentlyPlaying;
+import se.michaelthelin.spotify.model_objects.miscellaneous.CurrentlyPlayingContext;
 import se.michaelthelin.spotify.model_objects.specification.Track;
 
 public class OverlayWindow {
@@ -53,24 +58,24 @@ public class OverlayWindow {
     private static JSlider volumeSlider;
     private static String positionString = "Top Left";
 
-    private static final int PROGRESS_MIN = 0;
-    private static final int PROGRESS_MAX = 100;
-    private static final int PROGRESS_INIT = 100;
-
     private static final int VOLUME_MIN = 0;
     private static final int VOLUME_MAX = 100;
     private static final int VOLUME_INIT = 100;
     
     private static boolean isPlaying;
     private static Track currentTrack;
+    private static CurrentlyPlaying currentlyPlaying = App.getUsersCurrentlyPlayingTrack();
+    private static CurrentlyPlayingContext currentInfo = App.getUsersCurrentPlaybackInfo();
     private static BufferedImage currentArt;
-    private static Timer trackUpdateTimer;
-    private static final int TRACK_UPDATE_INTERVAL = 500;
+    
+    private static final int TRACK_CHANGE_UPDATE_INTERVAL = 2000;
+    private static final int TRACK_PLAYING_UPDATE_INTERVAL = 500;
+    private static final int TRACK_PROGRESS_CHANGE_UPDATE_INTERVAL = 500;
     
     private static ChangeListener progressListener;
-    /**private static ActionListener previousListener;
-    private static ActionListener pauseListener;
-    private static ActionListener nextListener;**/
+    private static ScheduledExecutorService TrackChangeExecutor;
+    private static ScheduledExecutorService TrackPlayingExecutor;
+    private static ScheduledExecutorService TrackProgressChangeExecutor;
 
     public static void showOverlay() {
         // Check if translucency is supported
@@ -115,6 +120,8 @@ public class OverlayWindow {
             frame.setShape(new RoundRectangle2D.Double(0, 0, width, height, 20, 20));
             frame.setOpacity(1f);
             frame.setAlwaysOnTop(true);
+            
+            
 
             // Create the content panel with a gray background
             contentPanel = new JPanel() {
@@ -126,8 +133,7 @@ public class OverlayWindow {
                 }
             };
             contentPanel.setLayout(null); // Use absolute positioning
-
-            // Set the bounds for the components
+            
             
             // Create the album art panel (square) with a white background
             albumArtPanel = new JPanel() {
@@ -241,10 +247,16 @@ public class OverlayWindow {
             contentPanel.add(previousButton);
 
             // Create the pause button
-            if(App.getUsersCurrentPlaybackInfo().getIs_playing() || App.getUsersCurrentlyPlayingTrack().getIs_playing()) {
-            	pauseButton = new JButton("⏸");
-            	isPlaying = true;
-            }else if(!App.getUsersCurrentPlaybackInfo().getIs_playing() || !App.getUsersCurrentlyPlayingTrack().getIs_playing()) {
+            if(currentInfo != null) {
+	            if(currentInfo.getIs_playing() || currentlyPlaying.getIs_playing()) {
+	            	pauseButton = new JButton("⏸");
+	            	isPlaying = true;
+	            }else if(!currentInfo.getIs_playing() || !currentlyPlaying.getIs_playing()) {
+	            	pauseButton = new JButton("⏵");
+	            	isPlaying = false;
+	            }
+            }
+            else {
             	pauseButton = new JButton("⏵");
             	isPlaying = false;
             }
@@ -364,8 +376,8 @@ public class OverlayWindow {
             };
             
             // Create the volume slider
-            if(App.getUsersCurrentPlaybackInfo() != null) {
-            	volumeSlider = new JSlider(JSlider.HORIZONTAL, VOLUME_MIN, VOLUME_MAX, App.getUsersCurrentPlaybackInfo().getDevice().getVolume_percent());
+            if(currentInfo != null) {
+            	volumeSlider = new JSlider(JSlider.HORIZONTAL, VOLUME_MIN, VOLUME_MAX, currentInfo.getDevice().getVolume_percent());
             }else {
             	volumeSlider = new JSlider(JSlider.HORIZONTAL, VOLUME_MIN, VOLUME_MAX, VOLUME_INIT);
                 App.setVolumePlayback(VOLUME_INIT);
@@ -391,7 +403,20 @@ public class OverlayWindow {
 
             // Show the window
             frame.setVisible(true);
-            startTrackUpdateTimer();
+            //startTrackUpdateTimer();
+            
+            // TODO ADD LISTENERS
+            startTrackChangeUpdateExecutor();
+            startTrackPlayingExecutor();
+            startTrackProgressExecutor();
+            
+            Runtime.getRuntime().addShutdownHook(new Thread() {
+                @Override
+                public void run() {
+                    stopExecutorServices();
+                }
+            });
+            
         } else {
             // Translucency is not supported, handle accordingly
             System.out.println("Translucency is not supported on this system.");
@@ -588,100 +613,106 @@ public class OverlayWindow {
 	    });
     }
     
-    public static void startTrackUpdateTimer() {
-        trackUpdateTimer = new Timer(TRACK_UPDATE_INTERVAL, new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-            	try {
-            		if(!App.getUsersCurrentPlaybackInfo().getIs_playing() || !App.getUsersCurrentlyPlayingTrack().getIs_playing()) {
-            			isPlaying = false;
-            			SwingUtilities.invokeLater(() -> {
-                    		pauseButton.setText("⏵");
-                		});
-            		}
-            		else if(App.getUsersCurrentPlaybackInfo().getIs_playing() || App.getUsersCurrentlyPlayingTrack().getIs_playing()) {
-            			isPlaying = true;
-            			SwingUtilities.invokeLater(() -> {
-                    		pauseButton.setText("⏸");
-                		});
-            		}
-	                // Get the currently playing track name
-	            	if(App.getUsersCurrentlyPlayingTrack() != null) {
-	            		if(App.getUsersCurrentlyPlayingTrack() != null && App.getUsersCurrentlyPlayingTrack().getItem() != null) {
-	            			if(!App.getTrack(App.getUsersCurrentlyPlayingTrack().getItem().getId()).equals(currentTrack)) {
-				            	currentTrack = App.getTrack(App.getUsersCurrentlyPlayingTrack().getItem().getId());
-				                try {
-									URL imageURL = new URL(currentTrack.getAlbum().getImages()[0].getUrl());
-									currentArt = ImageIO.read(imageURL);
-					                String trackName = currentTrack.getName();
-					                String artistName = currentTrack.getArtists()[0].getName();
-					                int songLength = currentTrack.getDurationMs();
-					                int songPosition = App.getUsersCurrentlyPlayingTrack().getProgress_ms();
-				
-					                // Update the song name label
-					                setAlbumArt(currentArt);
-					                setSongName(trackName);
-					                setArtistName(artistName);
-					                setProgressMax(songLength);
-					                setProgress(songPosition);
-								} catch (IOException e1) {
-									// TODO Auto-generated catch block
-									e1.printStackTrace();
-								}
-	            			}else if(App.getTrack(App.getUsersCurrentlyPlayingTrack().getItem().getId()).equals(currentTrack)) {
-				                int songPosition = App.getUsersCurrentlyPlayingTrack().getProgress_ms();
-				                int volumeValue = App.getUsersCurrentPlaybackInfo().getDevice().getVolume_percent();
-				                setProgress(songPosition);
-				                setVolume(volumeValue);
-	            			}
-	            		}
-	            	}
-            	} catch(NullPointerException e1) {
-            		System.out.println("Null Track");
-            	}
-            }
-        });
-        
-        // Start the timer
-        trackUpdateTimer.start();
+    public static void startTrackChangeUpdateExecutor() {
+    	TrackChangeExecutor = Executors.newSingleThreadScheduledExecutor();
+    	TrackChangeExecutor.scheduleAtFixedRate(() -> updateTrackChange(), 0, TRACK_CHANGE_UPDATE_INTERVAL, TimeUnit.MILLISECONDS);
     }
-    /**public static void setBarColor(String hex) {
-    	if(Color.decode(hex) != null) {
-    		BasicSliderUI newSliderUI = new BasicSliderUI(null) {
-		            @Override
-		            public void paintTrack(Graphics g) {
-		                Graphics2D g2 = (Graphics2D) g;
-		                Rectangle trackBounds = trackRect;
-		
-		                // Set the left side of the track as green
-		           
-		                g2.setColor(Color.decode(hex));
-		                g2.fillRect(trackBounds.x, trackBounds.y, thumbRect.x - trackBounds.x, trackBounds.height);
-		
-		                // Set the right side of the track as gray
-		                g2.setColor(Color.GRAY);
-		                g2.fillRect(thumbRect.x, trackBounds.y, trackBounds.width, trackBounds.height);
-		            }
-		
-		            @Override
-		            public void paintThumb(Graphics g) {
-		                Graphics2D g2 = (Graphics2D) g;
-		                Rectangle thumbBounds = thumbRect;
-		                
-		                // Set the thumb color as white
-		                g2.setColor(Color.WHITE);
-		                g2.fillRect(thumbBounds.x, thumbBounds.y, thumbBounds.width, thumbBounds.height);
-		            }
-		
-		        };
 
-		    SwingUtilities.invokeLater(() -> {
-		        JSlider newProgressBar = progressBar;
-		        JSlider newVolumeSlider = volumeSlider;
-    		});
+    private static void updateTrackChange() {
+    	CurrentlyPlaying currentlyPlayingUpdate = App.getUsersCurrentlyPlayingTrack();
+    	try {
+	    	if(currentlyPlayingUpdate != null) {
+	    		if(currentlyPlayingUpdate.getItem() != null) {
+	    			if(!currentlyPlaying.equals(currentlyPlayingUpdate)) {
+	    				currentlyPlaying = currentlyPlayingUpdate;
+		            	currentTrack = App.getTrack(currentlyPlayingUpdate.getItem().getId());
+		                try {
+							URL imageURL = new URL(currentTrack.getAlbum().getImages()[0].getUrl());
+							currentArt = ImageIO.read(imageURL);
+			                String trackName = currentTrack.getName();
+			                String artistName = currentTrack.getArtists()[0].getName();
+			                int songLength = currentTrack.getDurationMs();
+			                int songPosition = currentlyPlayingUpdate.getProgress_ms();
+		
+			                // Update the song name label
+			                setAlbumArt(currentArt);
+			                setSongName(trackName);
+			                setArtistName(artistName);
+			                setProgressMax(songLength);
+			                setProgress(songPosition);
+						} catch (IOException e1) {
+							// TODO Auto-generated catch block
+							e1.printStackTrace();
+						}
+	    			}
+	    		}
+	    	}
+    	} catch(NullPointerException e1) {
+    		System.out.println("Null Track");
     	}
-    	else {
-    		ErrorDialog.showErrorMessage();
-    	}
-    }**/
+    }
+    
+    private static void startTrackPlayingExecutor() {
+    	TrackPlayingExecutor = Executors.newSingleThreadScheduledExecutor();
+    	TrackPlayingExecutor.scheduleAtFixedRate(() -> updateTrackPlaying(), 0, TRACK_PLAYING_UPDATE_INTERVAL, TimeUnit.MILLISECONDS);
+    }
+    
+    private static void updateTrackPlaying() {
+    	CurrentlyPlayingContext currentPlaybackInfoUpdate = App.getUsersCurrentPlaybackInfo();
+    	CurrentlyPlaying currentlyPlayingUpdate = App.getUsersCurrentlyPlayingTrack();
+    	try {
+			if(!currentPlaybackInfoUpdate.getIs_playing() || !currentlyPlayingUpdate.getIs_playing()) {
+				isPlaying = false;
+				SwingUtilities.invokeLater(() -> {
+	        		pauseButton.setText("⏵");
+	    		});
+			}
+			else if(currentPlaybackInfoUpdate.getIs_playing() || currentlyPlayingUpdate.getIs_playing()) {
+				isPlaying = true;
+				SwingUtilities.invokeLater(() -> {
+	        		pauseButton.setText("⏸");
+	    		});
+			}
+	    } catch(NullPointerException e1) {
+			System.out.println("Null Track");
+		}
+    }
+    
+    private static void startTrackProgressExecutor() {
+    	TrackProgressChangeExecutor = Executors.newSingleThreadScheduledExecutor();
+    	TrackProgressChangeExecutor.scheduleAtFixedRate(() -> updateTrackProgress(), 0, TRACK_PROGRESS_CHANGE_UPDATE_INTERVAL, TimeUnit.MILLISECONDS);
+    }
+    
+    private static void updateTrackProgress() {
+    	CurrentlyPlayingContext currentPlaybackInfoUpdate = App.getUsersCurrentPlaybackInfo();
+    	CurrentlyPlaying currentlyPlayingUpdate = App.getUsersCurrentlyPlayingTrack();
+    	try {
+	    	if(currentlyPlayingUpdate != null) {
+	    		if(currentlyPlayingUpdate.getItem() != null) {
+			    	if(currentlyPlaying.equals(currentlyPlayingUpdate)) {
+			            int songPosition = currentlyPlayingUpdate.getProgress_ms();
+			            int volumeValue = currentPlaybackInfoUpdate.getDevice().getVolume_percent();
+			            setProgress(songPosition);
+			            setVolume(volumeValue);
+					}
+	    		}
+	    	}
+	    } catch(NullPointerException e1) {
+			System.out.println("Null Track");
+		}
+    }
+
+    private static void stopExecutorServices() {
+        if (TrackChangeExecutor != null && !TrackChangeExecutor.isShutdown()) {
+            TrackChangeExecutor.shutdown();
+        }
+
+        if (TrackPlayingExecutor != null && !TrackPlayingExecutor.isShutdown()) {
+            TrackPlayingExecutor.shutdown();
+        }
+
+        if (TrackProgressChangeExecutor != null && !TrackProgressChangeExecutor.isShutdown()) {
+            TrackProgressChangeExecutor.shutdown();
+        }
+    }
 }

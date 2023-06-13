@@ -86,40 +86,9 @@ public class SpotifyAuthorizationServer extends HttpServlet {
                 App.afterAuth();
                 OverlayWindow.showOverlay();
                 
-                /**GetCurrentUsersProfileRequest userProfileRequest = App.spotifyApi.getCurrentUsersProfile().build();
-                User user;
-                GetUsersCurrentlyPlayingTrackRequest playingTrackRequest = App.spotifyApi.getUsersCurrentlyPlayingTrack().build();
-                CurrentlyPlaying track;
-				try {
-					user = userProfileRequest.execute();
-					track = playingTrackRequest.execute();
-	                System.out.println("Display Name: " + user.getDisplayName());
-	                if(track != null) {
-		                System.out.println("Currently Playing Track: " + track.getItem().getName());
-	                }else { System.out.println("No track currently playing."); }
-	                
-				} catch (ParseException | SpotifyWebApiException | IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}**/
-				
             }
         }
     }
-    
-    /**
-    @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        // Extract the authorization code from the request parameters
-        code = request.getParameter("code");
-
-        // Handle the authorization code and obtain access and refresh tokens
-        // You can call the necessary methods or pass the code to your existing code logic
-
-        // Redirect the user back to your application
-        response.sendRedirect("http://localhost:" + PORT + "/callback"); // Replace with your desired redirect URL
-    }**/
     
     public static String getAuthorizationUrl() {
         // Construct the authorization URL with your desired parameters
@@ -147,10 +116,10 @@ public class SpotifyAuthorizationServer extends HttpServlet {
         }
     }
 	
-	/**public static void stopServer(Server server) throws Exception {
+	public static void stopServer(Server server) throws Exception {
         if (server != null) {
             server.stop();
             System.out.println("Server stopped");
         }
-    }**/
+    }
 }
