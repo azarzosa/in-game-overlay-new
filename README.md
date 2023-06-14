@@ -22,15 +22,9 @@ These are features I plan to implement in the coming weeks.
 
 ## Dependencies
 All dependencies are managed automatically by Maven.
-- JUnit
-  - Version: 3.8.1
-  - [Website](https://mvnrepository.com/artifact/junit/junit/3.8.1)
 - Spotify Web API Java
   - Version: 8
   - [GitHub](https://github.com/spotify-web-api-java/spotify-web-api-java)
-- Jetty
-  - Version: 11.0.6
-  - [Website](https://www.eclipse.org/jetty/)
 - Servlet
   - Version: 5
   - [GitHub](https://github.com/jakartaee/servlet)
