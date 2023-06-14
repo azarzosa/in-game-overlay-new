@@ -14,6 +14,12 @@ Please keep in mind that this app is still in Spotify's development mode. As suc
 
 [Download the Latest Stable release](https://github.com/azarzosa/in-game-overlay-new/releases/download/v1.0/SpotifyOverlay.exe)
 
+## Planned Features
+These are features I plan to implement in the coming weeks.
+- Add/Remove from library button
+- Playlist picker (dropdown)
+- Progress bar/volume bar color switcher
+
 ## Dependencies
 All dependencies are managed automatically by Maven.
 - JUnit
