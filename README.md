@@ -9,6 +9,9 @@
 The tool integrates directly with Spotify to deliver easy media control while using fullscreen applications (namely, games). 
 Please be advised, **the application must be in Borderless Fullscreen mode for the overlay to function.**
 
+### Note:
+Please keep in mind that this app is still in Spotify's development mode. As such, API calls are rate limited. If you wish to authenticate with the app, you may contact me or wait until Spotify extends the request quota.
+
 [Download the Latest Stable release](https://github.com/azarzosa/in-game-overlay-new/releases/download/v1.0/SpotifyOverlay.exe)
 
 ## Dependencies
