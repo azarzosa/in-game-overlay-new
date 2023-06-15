@@ -31,3 +31,6 @@ All dependencies are managed automatically by Maven.
 - JNA / JNA Platform
   - Versions: 5.10.0
   - [Website](https://github.com/java-native-access/jna)
+
+## Documentation
+The [full Javadoc](https://araezarzosa.dev/documentation/gameoverlay/az/araezarzosa/spotifyoverlay/spotify_in_game_overlay/package-summary.html) for this application is on my website.
